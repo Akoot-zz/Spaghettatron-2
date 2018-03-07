@@ -2,8 +2,16 @@
   "name": "Spaghettatron",
   "version": "2.0.0",
   "description": "The Spaghettatron you all know and love, now in HD!",
-  "main": "Spaghettatron.js",
+  "main": "spaghettatron.js",
   "author": "Akoot",
+  "engines": {
+    "node": "9.x",
+    "npm": "*"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node spaghettatron.js"
+  },
   "dependencies": {
     "discord.js": "^11.3.0",
     "download-file": "^0.1.5",
@@ -14,5 +22,13 @@
   { "type" : "git",
     "url" : "https://github.com/Akoot/Spaghettatron-2.git"
   },
-  "license" : "SEE LICENSE IN LICENSE.md"
+  "keywords": [
+    "heroku",
+    "discord.js"
+  ],
+  "license" : "SEE LICENSE IN LICENSE.md",
+  "bugs": {
+    "url": "https://github.com/Akoot/Spaghettatron-2/issues"
+  },
+  "homepage": "https://github.com/Akoot/Spaghettatron-2#readme"
 }
