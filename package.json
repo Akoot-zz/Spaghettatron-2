@@ -1,0 +1,13 @@
+{
+  "name": "Spaghettatron",
+  "version": "2.0.0",
+  "description": "The Spaghettatron you all know and love, now in HD!",
+  "main": "Spaghettatron.js",
+  "author": "Akoot",
+  "dependencies": {
+    "discord.js": "^11.3.0",
+    "download-file": "^0.1.5",
+    "mkdirp": "^0.5.1",
+    "request": "^2.83.0"
+  }
+}

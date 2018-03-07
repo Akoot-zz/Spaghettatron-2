@@ -1,0 +1,9 @@
+{
+	"prefix": "!",
+	"server": "",
+	"channel": "",
+	"logs_structure": "yyyy/MM/dd",
+	"log_format": "[hh:mm:ss] {username}: {message}",
+	"logs_dir": "./data/logs",
+	"weather_dir": "./data/weather"
+}
