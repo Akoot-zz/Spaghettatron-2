@@ -1,7 +1,7 @@
 /node_modules
 /data
 /strings
-auth\.json
-config\.json
-events\.json
-npm-debug\.log
+auth.json
+config.json
+events.json
+npm-debug.log
