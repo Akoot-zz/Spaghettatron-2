@@ -9,5 +9,10 @@
     "download-file": "^0.1.5",
     "mkdirp": "^0.5.1",
     "request": "^2.83.0"
-  }
+  },
+  "repository" :
+  { "type" : "git",
+    "url" : "https://github.com/Akoot/Spaghettatron-2.git"
+  },
+  "license" : "SEE LICENSE IN LICENSE.md"
 }
