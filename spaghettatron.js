@@ -212,7 +212,7 @@ function execute(cmd)
 					var options = [commands.roll.responses.yes, commands.roll.responses.no];
 					if(!args.includes('-maybe')) options.push(commands.roll.responses.maybe)
 
-					response.message = util.select(util.select(options));
+						response.message = util.select(util.select(options));
 				}
 
 				else {
@@ -315,7 +315,7 @@ function execute(cmd)
 
 			if(userData.location) {
 				response.message = undefined;
-				sendWeather(days, userData.location, metric, cmd.channel);
+				sendWeatherNow(userData.location, metric, cmd.channel);
 			} else {
 				response.message = util.select(commands.weather.responses.no_location);
 			}
@@ -324,8 +324,18 @@ function execute(cmd)
 		/* Send weather either for a certain number of days or for a specified location (1 day) */
 		else if(args.length === 1) {
 
+			/* If location is set and "now" weather is requested */
+			if(args[0].equalsIgnoreCase('now')) {
+				if(userData.location) {
+					response.message = undefined;
+					sendWeatherNow(userData.location, metric, cmd.channel);
+				} else {
+					response.message = util.select(commands.weather.responses.no_location);
+				}
+			}
+
 			/* If location is set, and the argument is a number, display weather for that many days */
-			if(!isNaN(args[0])) {
+			else if(!isNaN(args[0])) {
 
 				if(userData.location) {
 					response.message = undefined;
@@ -379,6 +389,12 @@ function execute(cmd)
 				}
 			}
 
+			/* Show "now" weather for a location */
+			else if(args[0].equalsIgnoreCase('now')) {
+				response.message = undefined;
+				sendWeatherNowSlow(args[0], metric, cmd.channel);
+			}
+
 			/* Show specific location weather */
 			else if(isNaN(args[0]) && !isNaN(args[1])) {
 
@@ -422,13 +438,6 @@ function execute(cmd)
 
 	/* Test command */
 	else if(command.equalsIgnoreCase('test')) {
-
-		response.message = undefined;
-		var embed = new Discord.RichEmbed()
-
-		.setColor(0xEF5414)
-
-		cmd.channel.send(embed);
 	}
 
 
@@ -695,6 +704,65 @@ function sendWeatherSlow(days, location, metric, channel) {
 
 		/* Send weather info on gotten ID */
 		sendWeather(days, obj[0].Key, metric, channel);
+	})
+	.catch(console.error);
+}
+
+/* Send current weather data */
+function sendWeatherNow(id, metric, channel) {
+
+	/* Set up URL */
+	var url = 'http://dataservice.accuweather.com/currentconditions/v1/{0}?apikey={1}'.format(id, auth.accu_weather_api_key);
+
+	util.requestJSON(url, 'Spaghettatron')
+	.then(function(obj) {
+
+		var object = obj[0];
+
+		var icon = object.WeatherIcon < 10 ? '0' + object.WeatherIcon : object.WeatherIcon;
+
+		var embed = new Discord.RichEmbed()
+
+		.setThumbnail('https://developer.accuweather.com/sites/default/files/{0}-s.png'.format(icon))
+		.setColor(object.IsDayTime ? 0xFFD033 : 0x2C4555)
+		.setFooter(object.WeatherText)
+
+		var temperature = object.Temperature;
+		var date = new Date(object.LocalObservationDateTime);
+
+		var content = '';
+
+		for(var index in commands.weather.display_now) {
+
+			if(!isNaN(index)) {
+
+				var line = commands.weather.display_now[index];
+
+				content += line
+				.replace('\{value\}', metric ? temperature.Metric.Value : temperature.Imperial.Value)
+				.replace('\{unit\}', metric ? temperature.Metric.Unit : temperature.Imperial.Unit)
+				;
+			}
+		}
+
+		embed.addField('Current Weather Conditions', content);
+
+		channel.send(embed);
+	});
+}
+
+/* Send now weather data from a city string */
+function sendWeatherNowSlow(location, metric, channel) {
+
+	/* Set up URL */
+	var url = 'http://dataservice.accuweather.com/locations/v1/cities/search?apikey={0}&q={1}'.format(auth.accu_weather_api_key, location);
+
+	/* Get the ID */
+	util.requestJSON(url, 'Spaghettatron')
+	.then(function(obj) {
+
+		/* Send weather info on gotten ID */
+		sendWeatherNow(obj[0].Key, metric, channel);
 	})
 	.catch(console.error);
 }
