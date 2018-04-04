@@ -136,6 +136,13 @@ Spaghettatron.on('message', function(message) {
 			if(reply.deleteAfter >= 0) {
 				message.delete(reply.deleteAfter);
 			}
+
+			if(reply.reactions) {
+				for(var i = 0; i < reply.reactions.length; i++) {
+					var addReaction = function() {message.react(reply.reactions[i])};
+					setTimeout(addReaction, 500);
+				}
+			}
 		}
 	}
 });
@@ -164,7 +171,8 @@ function execute(cmd)
 		message: util.select(messages.what),
 		fail: false,
 		removeSent: false,
-		deleteAfter: -1
+		deleteAfter: -1,
+		reactions: []
 	}
 
 	/* Roll */
@@ -410,6 +418,65 @@ function execute(cmd)
 			}
 		}
 	}
+
+	/* Poll Command */
+	else if(command.equalsIgnoreCase('poll')) {
+
+		if(args.length == 0) {
+			response.message = util.select(messages.fail);
+		}
+
+		else {
+
+			var title = 'Yes or no?';
+			if(args.includes('-t')) title = args[args.indexOf('-t') + 1];
+
+			var prompt = args.join(' ');
+			if(args.includes('-p')) prompt = args[args.indexOf('-p') + 1];
+
+			var options = ['Yes', 'No'];
+			if(args.includes('-o')) {
+				options = args[args.indexOf('-o') + 1].split(',').map(function(item) {
+					return item.trim();
+				});
+			}
+
+			var reacts = [':thumbsup:', ':thumbsdown:'];
+			if(args.includes('-r')) {
+				reacts = args[args.indexOf('-r') + 1].split(',').map(function(item) {
+					return item.trim();
+				});
+			}
+
+			var message = '**' + title + '**\n' + prompt;
+			for(var i = 0; i < options.length; i++) {
+				message += '\n' + options[i] + ' ' + reacts[i];
+			}
+
+			response.message = message;
+			response.reactions = reacts;
+
+			response.removeSent = true;
+		}
+	}
+
+/* Urban Dictionary command */
+else if(command.equalsIgnoreCase('ud')) {
+
+	var search = args.join('%20');
+	var url = 'https://www.urbandictionary.com/define.php?term=' + search;
+
+	response.message = url;
+}
+
+/* Define command */
+else if(command.equalsIgnoreCase('define') || command.equalsIgnoreCase('def')) {
+
+	var search = args.join('%20');
+	var url = 'https://www.merriam-webster.com/dictionary/' + search;
+
+	response.message = url;
+}
 
 	/* Help command */
 	else if(command.equalsIgnoreCase('help')) {
@@ -871,3 +938,11 @@ function getHelp(command) {
 	}
 	return embed;
 }
+
+// function sendPoll(tite, prompt, options, reactions, channel) {
+
+// 	var embed = new Discord.RichEmbed()
+
+// 	.setTitle(title)
+// 	channel.send(embed);
+// }
