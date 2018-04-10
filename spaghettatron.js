@@ -18,7 +18,7 @@ let Spaghettatron = new Discord.Client();
 Spaghettatron.login(auth.token);
 
 /* Custom Messages */
-var messages, responses, requests, activities, commands, edits;
+var messages, responses, searches, subreddits, requests, activities, commands, edits;
 
 /* When Spaghettatron is ready */
 Spaghettatron.on('ready', function() {
@@ -253,8 +253,8 @@ function execute(cmd)
 		if(args.length === 0) {
 
 			var list = '';
-			for(var key in requests) {
-				list += '`!' + key + '` *' + requests[key].length + ' entries*\n';
+			for(var i = 0; i < requests.length; i++) {
+				list += '`!' + requests[i].name + '` *' + requests[i].messages.length + ' messages*\n';
 			}
 			response.message = list;
 		}
@@ -265,14 +265,19 @@ function execute(cmd)
 			var list= '';
 
 			key:
-			for(var key in requests) {
-				if(args[0].toUpperCase() == key.toUpperCase()) {
+			for(var i = 0; i < requests.length; i++) {
+
+				if(args[0].equalsIgnoreCase(requests[i].name)) {
 
 					item:
-					for(var item in requests[key]) {
-						if(item <= 10) {
-							list += '`' + requests[key][item] + '`\n\n';
+					for(var j = 0; j < requests[i].messages.length; j++) {
+
+						var max = 15;
+
+						if(j <= max) {
+							list += '`' + requests[i].messages[j] + '`\n\n';
 						} else {
+							list += '*and ' + (requests[i].messages.length - max) + ' more...*';
 							break item;
 						}
 					}
@@ -460,24 +465,6 @@ function execute(cmd)
 		}
 	}
 
-/* Urban Dictionary command */
-else if(command.equalsIgnoreCase('ud')) {
-
-	var search = args.join('%20');
-	var url = 'https://www.urbandictionary.com/define.php?term=' + search;
-
-	response.message = url;
-}
-
-/* Define command */
-else if(command.equalsIgnoreCase('define') || command.equalsIgnoreCase('def')) {
-
-	var search = args.join('%20');
-	var url = 'https://www.merriam-webster.com/dictionary/' + search;
-
-	response.message = url;
-}
-
 	/* Help command */
 	else if(command.equalsIgnoreCase('help')) {
 
@@ -504,16 +491,90 @@ else if(command.equalsIgnoreCase('define') || command.equalsIgnoreCase('def')) {
 	}
 
 	/* Test command */
-	else if(command.equalsIgnoreCase('test')) {
+	else if(command.equalsIgnoreCase('addsub')) {
+		if(args.length >= 2) {
+
+			var name = args[0];
+			var url = args[1];
+			var subreddit = {name: args[0], url: args[1]};
+
+			if(args.length == 3){
+
+				if(!isNaN(args[2])) {
+					subreddit.limit = parseInt(args[2]);
+				}
+			}
+
+			subreddits.push(subreddit);
+			util.write(JSON.stringify(subreddits), './strings/subreddits.json');
+		} else {
+			response.message = util.select(messages.fail);
+		}
 	}
 
+	/* Test command */
+	else if(command.equalsIgnoreCase('test')) {
+		response.message = 'test';
+	}
 
-	/* Handle Requests */
+	/* Handle other */
 	else {
-		for(var key in requests) {
-			if(command.toLowerCase() == key) {
 
-				response.message = util.select(requests[key]);
+		/* Searches */
+		for(var i = 0; i < searches.length; i++) {
+			if(command.equalsIgnoreCase(searches[i].name)) {
+				response.message = searches[i].url + args.join('%20');
+				break;
+			}
+		}
+
+		/* Subreddits */
+		for(var i = 0; i < subreddits.length; i++) {
+
+			var subreddit = subreddits[i];
+
+			if(!subreddit.lastPost) {
+				subreddit.lastPost = 0;
+			}
+
+			if(command.equalsIgnoreCase(subreddit.name) && (!subreddit.limit || (subreddit.limit > 0))) {
+
+				util.requestJSON(subreddit.url + '.json', 'Spaghettatron')
+				.then(function(obj) {
+
+					var posts = obj.data.children;
+
+					var j = subreddit.lastPost;
+
+					do {
+						j = Math.floor(Math.random() * posts.length);
+					} while(j == subreddit.lastPost || !(posts[j].data && posts[j].data.url && isPicture(posts[j].data.url)))
+
+					function isPicture(url) {
+						return url.startsWith('https://imgur.com') ||url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.gif');
+					}
+
+					if(subreddit.limit) {
+						subreddit.limit--;
+					}
+
+					subreddit.lastPost = j;
+
+					cmd.channel.send(posts[j].data.url);
+				})
+				.catch(console.error);
+
+				response.message = null;
+				break;
+			}
+		}
+
+		/* Requests */
+		for(var i = 0; i < requests.length; i++) {
+
+			if(command.equalsIgnoreCase(requests[i].name)) {
+
+				response.message = util.select(requests[i].messages);
 				response.removeSent = true;
 
 				if(args.length === 1) {
@@ -522,9 +583,9 @@ else if(command.equalsIgnoreCase('define') || command.equalsIgnoreCase('def')) {
 
 					if(isNaN(index)) {
 						var items = [];
-						for(var i in requests[key]) {
+						for(var i = 0; i < requests[i].messages.length; i++) {
 
-							var item = requests[key][i];
+							var item = requests[i].messages[i];
 
 							if(item.toUpperCase().includes(index.toUpperCase())) {
 								items.push(item);
@@ -535,7 +596,7 @@ else if(command.equalsIgnoreCase('define') || command.equalsIgnoreCase('def')) {
 						}
 					} else {
 						if(!isNaN(index)) {
-							response.message = requests[key][index];
+							response.message = requests[i].messages[index];
 						}
 					}
 				}
@@ -648,6 +709,12 @@ function loadJSON() {
 	contents = fs.readFileSync('./strings/responses.json');
 	responses = JSON.parse(contents);
 
+	contents = fs.readFileSync('./strings/searches.json');
+	searches = JSON.parse(contents);
+
+	contents = fs.readFileSync('./strings/subreddits.json');
+	subreddits = JSON.parse(contents);
+
 	contents = fs.readFileSync('./strings/requests.json');
 	requests = JSON.parse(contents);
 
@@ -680,7 +747,7 @@ function init() {
 	var channel = Spaghettatron.channels.get(config.channel);
 
 	if(channel) {
-		
+
 		for(var i in events.dates) {
 
 			var obj = events.dates[i];
@@ -738,7 +805,7 @@ function sendWeather(days, id, metric, channel) {
 			for(var index in commands.weather.display) {
 
 				if(!isNaN(index)) {
-					
+
 					var line = commands.weather.display[index];
 
 					content += line
@@ -907,7 +974,7 @@ function getHelp(command) {
 						}
 					}
 				}
-				
+
 				/* Add an example */
 				body += '\n**Example:** `' + cmd + ' ' + arg1 + args + '`';
 
