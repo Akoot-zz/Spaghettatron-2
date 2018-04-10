@@ -537,49 +537,52 @@ function execute(cmd)
 				subreddit.shown = [];
 			}
 
-			if(command.equalsIgnoreCase(subreddit.name) && (!subreddit.limit || (subreddit.limit > 0))) {
+			if(command.equalsIgnoreCase(subreddit.name)) {
 
-				util.requestJSON(subreddit.url + '.json', 'Spaghettatron')
-				.then(function(obj) {
+				if(subreddit.limit == undefined || subreddit.limit > 0) {
 
-					var posts = obj.data.children;
-					var imagePosts = [];
+					util.requestJSON(subreddit.url + '.json', 'Spaghettatron')
+					.then(function(obj) {
 
-					for(var j = 0; j < posts.length; j++) {
+						var posts = obj.data.children;
+						var imagePosts = [];
 
-						if((posts[j].data && posts[j].data.url && isPicture(posts[j].data.url))) {
-							imagePosts.push(posts[j]);
+						for(var j = 0; j < posts.length; j++) {
+
+							if((posts[j].data && posts[j].data.url && isPicture(posts[j].data.url))) {
+								imagePosts.push(posts[j]);
+							}
 						}
-					}
 
-					if(subreddit.shown.length >= imagePosts.length) {
-						subreddit.shown = [];
-					}
+						if(subreddit.shown.length >= imagePosts.length) {
+							subreddit.shown = [];
+						}
 
-					var k = 0;
+						var k = 0;
 
-					do {
-						k = Math.floor(Math.random() * imagePosts.length);
-					} while(subreddit.shown.includes(k))
+						do {
+							k = Math.floor(Math.random() * imagePosts.length);
+						} while(subreddit.shown.includes(k))
 
-					function isPicture(url) {
-						return url.startsWith('https://imgur.com') ||url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.gif');
-					}
+						function isPicture(url) {
+							return url.startsWith('https://imgur.com') || url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.gif');
+						}
 
-					if(subreddit.limit) {
-						subreddit.limit--;
-					}
+						if(subreddit.limit > 0) {
+							subreddit.limit--;
+						}
 
-					subreddit.shown.push[k];
+						subreddit.shown.push[k];
 
-					subreddit.lastPost = k;
+						cmd.channel.send(posts[k].data.url);
+					})
+					.catch(console.error);
 
-					cmd.channel.send(posts[k].data.url);
-				})
-				.catch(console.error);
-
-				response.message = null;
-				break;
+					response.message = null;
+					break;
+				}
+			} else {
+				response.message = util.select(commands.subreddit.responses.limit_reached);
 			}
 		}
 
