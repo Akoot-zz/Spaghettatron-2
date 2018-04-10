@@ -533,8 +533,8 @@ function execute(cmd)
 
 			var subreddit = subreddits[i];
 
-			if(!subreddit.lastPost) {
-				subreddit.lastPost = 0;
+			if(!subreddit.shown) {
+				subreddit.shown = [];
 			}
 
 			if(command.equalsIgnoreCase(subreddit.name) && (!subreddit.limit || (subreddit.limit > 0))) {
@@ -543,12 +543,24 @@ function execute(cmd)
 				.then(function(obj) {
 
 					var posts = obj.data.children;
+					var imagePosts = [];
 
-					var j = subreddit.lastPost;
+					for(var j = 0; j < posts.length; j++) {
+
+						if((posts[j].data && posts[j].data.url && isPicture(posts[j].data.url))) {
+							imagePosts.push(posts[j]);
+						}
+					}
+
+					if(subreddit.shown.length >= imagePosts.length) {
+						subreddit.shown = [];
+					}
+
+					var k = 0;
 
 					do {
-						j = Math.floor(Math.random() * posts.length);
-					} while(j == subreddit.lastPost || !(posts[j].data && posts[j].data.url && isPicture(posts[j].data.url)))
+						k = Math.floor(Math.random() * imagePosts.length);
+					} while(subreddit.shown.includes(k))
 
 					function isPicture(url) {
 						return url.startsWith('https://imgur.com') ||url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.gif');
@@ -558,9 +570,11 @@ function execute(cmd)
 						subreddit.limit--;
 					}
 
-					subreddit.lastPost = j;
+					subreddit.shown.push[k];
 
-					cmd.channel.send(posts[j].data.url);
+					subreddit.lastPost = k;
+
+					cmd.channel.send(posts[k].data.url);
 				})
 				.catch(console.error);
 
