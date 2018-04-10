@@ -524,20 +524,20 @@ function execute(cmd)
 		for(var i = 0; i < searches.length; i++) {
 			if(command.equalsIgnoreCase(searches[i].name)) {
 				response.message = searches[i].url + args.join('%20');
-				break;
+				return response;
 			}
 		}
 
 		/* Subreddits */
 		for(var i = 0; i < subreddits.length; i++) {
 
-			var subreddit = subreddits[i];
+			if(command.equalsIgnoreCase(subreddits[i].name)) {
 
-			if(!subreddit.shown) {
-				subreddit.shown = [];
-			}
+				var subreddit = subreddits[i];
 
-			if(command.equalsIgnoreCase(subreddit.name)) {
+				if(!subreddit.shown) {
+					subreddit.shown = [];
+				}
 
 				if(subreddit.limit == undefined || subreddit.limit > 0) {
 
@@ -579,10 +579,11 @@ function execute(cmd)
 					.catch(console.error);
 
 					response.message = null;
-					break;
+					return response;
 				}
 			} else {
 				response.message = util.select(commands.subreddit.responses.limit_reached);
+				return response;
 			}
 		}
 
