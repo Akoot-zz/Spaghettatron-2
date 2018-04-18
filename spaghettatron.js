@@ -65,7 +65,7 @@ Spaghettatron.on('message', function(message) {
 
 		if(content.toLowerCase().includes(key)) {
 
-			var replace = content.replace(key, util.select(edits.replace[key])) + '\n' + '-' + message.author.username;
+			var replace = '"' + content.replace(key, util.select(edits.replace[key])) + '"\n' + '-' + message.author.username;
 			message.delete()
 			.then(message.channel.send(replace))
 			.catch(console.error);
@@ -490,27 +490,124 @@ function execute(cmd)
 		}
 	}
 
-	/* Test command */
-	else if(command.equalsIgnoreCase('addsub')) {
-		if(args.length >= 2) {
+	/* Subreddit commands */
+	else if(command.equalsIgnoreCase('subreddit')) {
 
-			var name = args[0];
-			var url = args[1];
-			var subreddit = {name: args[0], url: args[1]};
+		if(args.length == 0) {
 
-			if(args.length == 3){
+			var list = '';
+			for(var i = 0; i < subreddits.length; i++) {
+				var subreddit = subreddits[i];
+				list += '**' + config.prefix + subreddit.name + '** `r/' + (subreddit.url ?  subreddit.url : subreddit.name) + '`' + (subreddit.limit ? ' *Limited to ' + subreddit.limit + ' times a day*' : '') + '\n';
+			}
 
-				if(!isNaN(args[2])) {
-					subreddit.limit = parseInt(args[2]);
+			response.message = list;
+
+		} else {
+
+			if(args[0].equalsIgnoreCase('add')) {
+
+				var subreddit = {};
+
+				if(args.length == 2) {
+					subreddit.name = args[1];
+				}
+				else if(args.length >= 3) {
+
+					subreddit.name = args[1];
+
+					if(!isNaN(args[2])) {
+						subreddit.limit = parseInt(args[2]);
+					} else {
+
+						subreddit.url = args[2];
+						if(args.length == 4){
+
+							if(!isNaN(args[3])) {
+								subreddit.limit = parseInt(args[3]);
+							}
+						}
+					}
+
+					if(args.contains('--text')) {
+						subreddit.text = true;
+					}
+
+				} else {
+					response.message = util.select(messages.fail);
+					return response;
+				}
+
+				subreddits.push(subreddit);
+				response.message = util.select(commands.subreddit.responses.add_subreddit).format(subreddit.url ? subreddit.url : subreddit.name);
+			}
+			else if(args[0].equalsIgnoreCase('remove')) {
+
+				if(args.length == 2) {
+
+					var found = false;
+					for(var i = 0; i < subreddits.length; i++) {
+						if(subreddits[i].name == args[1]) {
+							found = true;
+							subreddits.splice(i, 1);
+							response.message = util.select(commands.subreddit.responses.delete_subreddit).format(args[1]);
+							break;
+						}
+					}
+					if(!found) response.message = util.select(commands.subreddit.responses.not_found).format(args[1]);
+
+				} else {
+					response.message = util.select(messages.fail);
+					return response;
+				}
+			}
+			else if (args[0].equalsIgnoreCase('limit')) {
+
+				if(args.length == 3) {
+
+					if(!isNaN(args[2])) {
+
+						var found = false;
+						for(var i = 0; i < subreddits.length; i++) {
+							if(subreddits[i].name == args[1]) {
+								found = true;
+								subreddits[i].limit = parseInt(args[2]);
+								response.message = util.select(commands.subreddit.responses.limit_set).format(args[2], args[1]);
+								break;
+							}
+						}
+
+						if(!found) response.message = util.select(commands.subreddit.responses.not_found).format(args[1]);
+					}
+					else if(args[2].equalsIgnoreCase('none')) {
+
+						var found = false;
+						for(var i = 0; i < subreddits.length; i++) {
+
+							if(subreddits[i].name == args[1]) {
+
+								found = true;
+								subreddits[i].limit = undefined;
+								response.message = util.select(commands.subreddit.responses.limit_set).format('unlimited', args[1]);
+								break;
+							}
+						}
+
+						if(!found) response.message = util.select(commands.subreddit.responses.not_found).format(args[1]);
+
+					} else {
+						response.message = util.select(messages.fail);
+					}
 				}
 			}
 
-			subreddits.push(subreddit);
+			for(var i = 0; i < subreddits.length; i++) {
+				subreddits[i].shown = undefined;
+			}
 			util.write(JSON.stringify(subreddits), './strings/subreddits.json');
-		} else {
-			response.message = util.select(messages.fail);
 		}
 	}
+
 
 	/* Test command */
 	else if(command.equalsIgnoreCase('test')) {
@@ -539,9 +636,9 @@ function execute(cmd)
 					subreddit.shown = [];
 				}
 
-				if(subreddit.limit == undefined || subreddit.limit > 0) {
+				if(subreddit.limit === undefined || subreddit.limit > 0) {
 
-					util.requestJSON(subreddit.url + '.json', 'Spaghettatron')
+					util.requestJSON('http://reddit.com/r/' + (subreddit.url ? subreddit.url : subreddit.name) + '.json', 'Spaghettatron')
 					.then(function(obj) {
 
 						var posts = obj.data.children;
@@ -549,7 +646,7 @@ function execute(cmd)
 
 						for(var j = 0; j < posts.length; j++) {
 
-							if((posts[j].data && posts[j].data.url && isPicture(posts[j].data.url))) {
+							if(posts[j].data.url && (subreddit.text || util.isImage(posts[j].data.url) || util.isVideo(posts[j].data.url))) {
 								imagePosts.push(posts[j]);
 							}
 						}
@@ -564,26 +661,20 @@ function execute(cmd)
 							k = Math.floor(Math.random() * imagePosts.length);
 						} while(subreddit.shown.includes(k))
 
-						function isPicture(url) {
-							return url.startsWith('https://imgur.com') || url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.gif');
-						}
-
-						if(subreddit.limit > 0) {
-							subreddit.limit--;
+						if(subreddit.limit !== undefined && subreddit.limit > 0) {
+							--subreddit.limit;
 						}
 
 						subreddit.shown.push[k];
 
-						cmd.channel.send(posts[k].data.url);
+						cmd.channel.send(imagePosts[k].data.url);
 					})
 					.catch(console.error);
 
 					response.message = null;
-					return response;
+				} else {
+					response.message = util.select(commands.subreddit.responses.limit_reached);
 				}
-			} else {
-				response.message = util.select(commands.subreddit.responses.limit_reached);
-				return response;
 			}
 		}
 
@@ -639,16 +730,20 @@ function log(message) {
 /* Un-log a chat message (delete from text log, but add to deleted log) */
 function unlog(message) {
 
-	/* Get the logged message */
-	var logged = toLoggedMessage(message);
+	/* Do not unlog commands */
+	if(!message.content.startsWith(config.prefix)) {
 
-	/* Remove line from text log */
-	util.removeLine(logged.line, logged.dir + '/' + logged.file);
+		/* Get the logged message */
+		var logged = toLoggedMessage(message);
 
-	var dir = logged.dir + '/deleted/';
+		/* Remove line from text log */
+		util.removeLine(logged.line, logged.dir + '/' + logged.file);
 
-	/* Save to the deleted log */
-	util.addLine(logged.line + '\n', dir + logged.file);
+		var dir = logged.dir + '/deleted/';
+
+		/* Save to the deleted log */
+		util.addLine(logged.line + '\n', dir + logged.file);
+	}
 }
 
 /* Create logged message object */
@@ -696,13 +791,13 @@ function toLoggedMessage(message) {
 	.replace('hh', date.getHours())
 	.replace('mm', date.getMinutes())
 	.replace('ss', date.getSeconds())
-	.replace('\{username\}', message.author.username)
-	.replace('\{message\}', content);
+	.replace('username', message.author.username)
+	.replace('message', content);
 
 	/* Format the directory */
 	dir = config.logs_dir + '/' + config.logs_structure
-	.replace('MM', util.getMonthName(date))
-	.replace('mm', date.getMonth + 1)
+	.replace('MM', util.getMonthName(date).toString())
+	.replace('mm', date.getMonth() + 1)
 	.replace('dd', date.getDate())
 	.replace('yyyy', date.getFullYear());
 
@@ -710,7 +805,7 @@ function toLoggedMessage(message) {
 		line: line,
 		attachments: attachments,
 		dir: dir,
-		file: message.channel.name + '.log'
+		file: message.channel.name  + (content.startsWith(config.prefix) ? '-commands' : '') + '.log'
 	}
 
 	return obj;

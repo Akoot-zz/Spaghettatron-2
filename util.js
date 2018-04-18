@@ -110,6 +110,34 @@ module.exports = {
 		});
 	},
 
+	isImage: function(url) {
+
+		var sites = ['imgur.com', 'instagram.com'];
+		var extensions = ['jpg', 'png', 'gif'];
+
+		for(var i = 0; i < sites.length; i++) {
+			if(url.startsWith('https://' + sites[i]) || url.startsWith('http://' + sites[i])) return true;
+		}
+		for(var i = 0; i < extensions.length; i++) {
+			if(url.endsWith('.' + extensions[i])) return true;
+		}
+		return false;
+	},
+
+	isVideo: function(url) {
+
+		var sites = ['imgur.com', 'instagram.com', 'youtube.com', 'vimeo.com', 'dailymotion.com'];
+		var extensions = ['mov', 'mp4', 'avi'];
+
+		for(var i = 0; i < sites.length; i++) {
+			if(url.startsWith('https://' + sites[i]) || url.startsWith('http://' + sites[i])) return true;
+		}
+		for(var i = 0; i < extensions.length; i++) {
+			if(url.endsWith('.' + extensions[i])) return true;
+		}
+		return false;
+	},
+
 	random: function(min, max) {
 		min = Math.ceil(min);
 		max = Math.floor(max);
