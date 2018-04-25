@@ -18,7 +18,7 @@ let Spaghettatron = new Discord.Client();
 Spaghettatron.login(auth.token);
 
 /* Custom Messages */
-var messages, responses, searches, subreddits, requests, activities, commands, edits;
+var messages, responses, command_redirects, searches, subreddits, requests, activities, commands, edits;
 
 /* When Spaghettatron is ready */
 Spaghettatron.on('ready', function() {
@@ -173,6 +173,19 @@ function execute(cmd)
 		removeSent: false,
 		deleteAfter: -1,
 		reactions: []
+	}
+
+	/* Redirects */
+	for(var i = 0; i < command_redirects.length; i++) {
+
+		var c = command_redirects[i];
+		if(command.equalsIgnoreCase(c.get)) {
+			command = c.set;
+			if(c.args) {
+				args = c.args.concat(args);
+			}
+			break;
+		}
 	}
 
 	/* Roll */
@@ -491,14 +504,14 @@ function execute(cmd)
 	}
 
 	/* Subreddit commands */
-	else if(command.equalsIgnoreCase('subreddit')) {
+	else if(command.equalsIgnoreCase('subreddits') || command.equalsIgnoreCase('subreddit')) {
 
 		if(args.length == 0) {
 
 			var list = '';
 			for(var i = 0; i < subreddits.length; i++) {
 				var subreddit = subreddits[i];
-				list += '**' + config.prefix + subreddit.name + '** `r/' + (subreddit.url ?  subreddit.url : subreddit.name) + '`' + (subreddit.limit ? ' *Limited to ' + subreddit.limit + ' times a day*' : '') + '\n';
+				list += '**' + config.prefix + subreddit.name + '** `r/' + (subreddit.url ?  subreddit.url : subreddit.name) + '`' + (subreddit.nsfw ? ' *NSFW*' : '') + '\n';
 			}
 
 			response.message = list;
@@ -516,21 +529,14 @@ function execute(cmd)
 
 					subreddit.name = args[1];
 
-					if(!isNaN(args[2])) {
-						subreddit.limit = parseInt(args[2]);
-					} else {
+					subreddit.url = args[2];
 
-						subreddit.url = args[2];
-						if(args.length == 4){
-
-							if(!isNaN(args[3])) {
-								subreddit.limit = parseInt(args[3]);
-							}
-						}
+					if(args.includes('--nsfw')) {
+						subreddit.nsfw = true;
 					}
 
-					if(args.contains('--text')) {
-						subreddit.text = true;
+					if(args.includes('--troll')) {
+						subreddit.troll = true;
 					}
 
 				} else {
@@ -539,7 +545,7 @@ function execute(cmd)
 				}
 
 				subreddits.push(subreddit);
-				response.message = util.select(commands.subreddit.responses.add_subreddit).format(subreddit.url ? subreddit.url : subreddit.name);
+				response.message = util.select(commands.subreddits.responses.add_subreddit).format(subreddit.url ? subreddit.url : subreddit.name);
 			}
 			else if(args[0].equalsIgnoreCase('remove')) {
 
@@ -550,54 +556,15 @@ function execute(cmd)
 						if(subreddits[i].name == args[1]) {
 							found = true;
 							subreddits.splice(i, 1);
-							response.message = util.select(commands.subreddit.responses.delete_subreddit).format(args[1]);
+							response.message = util.select(commands.subreddits.responses.delete_subreddit).format(args[1]);
 							break;
 						}
 					}
-					if(!found) response.message = util.select(commands.subreddit.responses.not_found).format(args[1]);
+					if(!found) response.message = util.select(commands.subreddits.responses.not_found).format(args[1]);
 
 				} else {
 					response.message = util.select(messages.fail);
 					return response;
-				}
-			}
-			else if (args[0].equalsIgnoreCase('limit')) {
-
-				if(args.length == 3) {
-
-					if(!isNaN(args[2])) {
-
-						var found = false;
-						for(var i = 0; i < subreddits.length; i++) {
-							if(subreddits[i].name == args[1]) {
-								found = true;
-								subreddits[i].limit = parseInt(args[2]);
-								response.message = util.select(commands.subreddit.responses.limit_set).format(args[2], args[1]);
-								break;
-							}
-						}
-
-						if(!found) response.message = util.select(commands.subreddit.responses.not_found).format(args[1]);
-					}
-					else if(args[2].equalsIgnoreCase('none')) {
-
-						var found = false;
-						for(var i = 0; i < subreddits.length; i++) {
-
-							if(subreddits[i].name == args[1]) {
-
-								found = true;
-								subreddits[i].limit = undefined;
-								response.message = util.select(commands.subreddit.responses.limit_set).format('unlimited', args[1]);
-								break;
-							}
-						}
-
-						if(!found) response.message = util.select(commands.subreddit.responses.not_found).format(args[1]);
-
-					} else {
-						response.message = util.select(messages.fail);
-					}
 				}
 			}
 
@@ -605,6 +572,46 @@ function execute(cmd)
 				subreddits[i].shown = undefined;
 			}
 			util.write(JSON.stringify(subreddits), './strings/subreddits.json');
+		}
+	}
+
+	/* Embed Searches */
+	else if(command.equalsIgnoreCase('searches')) {
+
+		if(args.length == 0) {
+
+			var list = '';
+			for(var i = 0; i < searches.length; i++) {
+				var searchEngine = searches[i];
+				list += '**' + config.prefix + searchEngine.name + '** `r/' + (searchEngine.url ?  searchEngine.url : searchEngine.name) + '`' + '\n';
+			}
+
+			response.message = list;
+
+		} else {
+
+			if(args.length > 1) {
+
+				if(args.length == 2) {
+
+					if(args[0].equalsIgnoreCase('remove')) {
+						for(var i = 0; i < searches.length; i++) {
+							if(searches[i].name == args[1]) {
+								searches.splice(i, 1);
+								break;
+							}
+						}
+					}
+				}
+				else if(args.length == 3) {
+
+					if(args[0].equalsIgnoreCase('add')) {
+						searches.push({name: args[1], url: args[2]});
+					}
+				}
+
+				util.write(JSON.stringify(searches), './strings/searches.json');
+			}
 		}
 	}
 
@@ -636,45 +643,44 @@ function execute(cmd)
 					subreddit.shown = [];
 				}
 
-				if(subreddit.limit === undefined || subreddit.limit > 0) {
-
-					util.requestJSON('http://reddit.com/r/' + (subreddit.url ? subreddit.url : subreddit.name) + '.json', 'Spaghettatron')
-					.then(function(obj) {
-
-						var posts = obj.data.children;
-						var imagePosts = [];
-
-						for(var j = 0; j < posts.length; j++) {
-
-							if(posts[j].data.url && (subreddit.text || util.isImage(posts[j].data.url) || util.isVideo(posts[j].data.url))) {
-								imagePosts.push(posts[j]);
-							}
-						}
-
-						if(subreddit.shown.length >= imagePosts.length) {
-							subreddit.shown = [];
-						}
-
-						var k = 0;
-
-						do {
-							k = Math.floor(Math.random() * imagePosts.length);
-						} while(subreddit.shown.includes(k))
-
-						if(subreddit.limit !== undefined && subreddit.limit > 0) {
-							--subreddit.limit;
-						}
-
-						subreddit.shown.push[k];
-
-						cmd.channel.send(imagePosts[k].data.url);
-					})
-					.catch(console.error);
-
-					response.message = null;
-				} else {
-					response.message = util.select(commands.subreddit.responses.limit_reached);
+				if(subreddit.troll) {
+					subreddit.url = commands.subreddits.troll_url;
 				}
+
+				util.requestJSON('http://reddit.com/r/' + (subreddit.url ? subreddit.url : subreddit.name) + '.json', 'Spaghettatron')
+				.then(function(obj) {
+
+					var posts = obj.data.children;
+					var imagePosts = [];
+					var nsfw = subreddit.nsfw || obj.data.whitelist_status === "promo_adult_nsfw";
+
+					for(var j = 0; j < posts.length; j++) {
+						if(posts[j].data.url && (util.isImage(posts[j].data.url) || util.isVideo(posts[j].data.url))) {
+							imagePosts.push(posts[j]);
+						}
+					}
+
+					if(subreddit.shown.length >= imagePosts.length) {
+						subreddit.shown = [];
+					}
+
+					var k = 0;
+
+					do {
+						k = Math.floor(Math.random() * imagePosts.length);
+					} while(subreddit.shown.includes(k))
+
+					subreddit.shown.push[k];
+
+					if(!nsfw) {
+						cmd.channel.send(imagePosts[k].data.url);
+					} else {
+						cmd.channel.send(util.select(commands.subreddits.responses.nsfw));
+					}
+				})
+				.catch(console.error);
+
+				response.message = null;
 			}
 		}
 
@@ -839,6 +845,9 @@ function loadJSON() {
 
 	contents = fs.readFileSync('./strings/edits.json');
 	edits = JSON.parse(contents);
+
+	contents = fs.readFileSync('./strings/command_redirects.json');
+	command_redirects = JSON.parse(contents);
 }
 
 /* Init functions */
