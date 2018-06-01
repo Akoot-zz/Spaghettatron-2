@@ -32,7 +32,7 @@ Spaghettatron.on('ready', function() {
 Spaghettatron.on('message', function(message) {
 
 	/* Spaghettatron will ignore his own messages */
-	if(message.author == Spaghettatron.user) {
+	if(message.author === Spaghettatron.user) {
 		return;
 	}
 
@@ -319,7 +319,7 @@ function execute(cmd)
 
 		/* Get the object for the user data if applicable */
 		for(var obj in data) {
-			if(data[obj].id == sender.id) {
+			if(data[obj].id === sender.id) {
 				userData = data[obj];
 			}
 		}
@@ -437,47 +437,6 @@ function execute(cmd)
 		}
 	}
 
-	/* Poll Command */
-	else if(command.equalsIgnoreCase('poll')) {
-
-		if(args.length == 0) {
-			response.message = util.select(messages.fail);
-		}
-
-		else {
-
-			var title = 'Yes or no?';
-			if(args.includes('-t')) title = args[args.indexOf('-t') + 1];
-
-			var prompt = args.join(' ');
-			if(args.includes('-p')) prompt = args[args.indexOf('-p') + 1];
-
-			var options = ['Yes', 'No'];
-			if(args.includes('-o')) {
-				options = args[args.indexOf('-o') + 1].split(',').map(function(item) {
-					return item.trim();
-				});
-			}
-
-			var reacts = [':thumbsup:', ':thumbsdown:'];
-			if(args.includes('-r')) {
-				reacts = args[args.indexOf('-r') + 1].split(',').map(function(item) {
-					return item.trim();
-				});
-			}
-
-			var message = '**' + title + '**\n' + prompt;
-			for(var i = 0; i < options.length; i++) {
-				message += '\n' + options[i] + ' ' + reacts[i];
-			}
-
-			response.message = message;
-			response.reactions = reacts;
-
-			response.removeSent = true;
-		}
-	}
-
 	/* Help command */
 	else if(command.equalsIgnoreCase('help')) {
 
@@ -506,7 +465,7 @@ function execute(cmd)
 	/* Subreddit commands */
 	else if(command.equalsIgnoreCase('subreddits') || command.equalsIgnoreCase('subreddit')) {
 
-		if(args.length == 0) {
+		if(args.length === 0) {
 
 			var list = '';
 			for(var i = 0; i < subreddits.length; i++) {
@@ -522,7 +481,7 @@ function execute(cmd)
 
 				var subreddit = {};
 
-				if(args.length == 2) {
+				if(args.length === 2) {
 					subreddit.name = args[1];
 				}
 				else if(args.length >= 3) {
@@ -549,11 +508,11 @@ function execute(cmd)
 			}
 			else if(args[0].equalsIgnoreCase('remove')) {
 
-				if(args.length == 2) {
+				if(args.length === 2) {
 
 					var found = false;
 					for(var i = 0; i < subreddits.length; i++) {
-						if(subreddits[i].name == args[1]) {
+						if(subreddits[i].name === args[1]) {
 							found = true;
 							subreddits.splice(i, 1);
 							response.message = util.select(commands.subreddits.responses.delete_subreddit).format(args[1]);
@@ -578,7 +537,7 @@ function execute(cmd)
 	/* Embed Searches */
 	else if(command.equalsIgnoreCase('searches')) {
 
-		if(args.length == 0) {
+		if(args.length === 0) {
 
 			var list = '';
 			for(var i = 0; i < searches.length; i++) {
@@ -592,18 +551,18 @@ function execute(cmd)
 
 			if(args.length > 1) {
 
-				if(args.length == 2) {
+				if(args.length === 2) {
 
 					if(args[0].equalsIgnoreCase('remove')) {
 						for(var i = 0; i < searches.length; i++) {
-							if(searches[i].name == args[1]) {
+							if(searches[i].name === args[1]) {
 								searches.splice(i, 1);
 								break;
 							}
 						}
 					}
 				}
-				else if(args.length == 3) {
+				else if(args.length === 3) {
 
 					if(args[0].equalsIgnoreCase('add')) {
 						searches.push({name: args[1], url: args[2]});
@@ -878,7 +837,7 @@ function init() {
 				sendMessage(util.select(requests[select(obj.requests)]));
 			};
 
-			if(date.getMonth() + 1 == obj.month && date.getDate() == obj.day) {
+			if(date.getMonth() + 1 === obj.month && date.getDate() === obj.day) {
 				if(obj.repeat === true) {
 					timers.setInterval(event, obj.delay);
 				} else {
@@ -940,7 +899,7 @@ function sendWeather(days, id, metric, channel) {
 				}
 			}
 
-			embed.addField(days == 1 ? 'Today' : util.getDayName(date), content);
+			embed.addField(days === 1 ? 'Today' : util.getDayName(date), content);
 		}
 
 		channel.send(embed);
@@ -1041,7 +1000,7 @@ function getHelp(command) {
 	for(var key in help.commands) {
 
 		/* Handle commands with one argument */
-		if(key == 'no_arguments') {
+		if(key === 'no_arguments') {
 
 			var body;
 
@@ -1059,7 +1018,7 @@ function getHelp(command) {
 		}
 
 		/* Handle commands with one or more arguments */
-		else if(key == 'other') {
+		else if(key === 'other') {
 
 			for(var obj in help.commands.other) {
 
@@ -1127,11 +1086,3 @@ function getHelp(command) {
 	}
 	return embed;
 }
-
-// function sendPoll(tite, prompt, options, reactions, channel) {
-
-// 	var embed = new Discord.RichEmbed()
-
-// 	.setTitle(title)
-// 	channel.send(embed);
-// }
