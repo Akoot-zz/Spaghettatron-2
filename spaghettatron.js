@@ -9,9 +9,9 @@ const download = require('download-file')
 const util = require('./util')
 
 /* Configs */
-const auth = require('./auth.json')
-const config = require ('./config.json')
-const events = require('./events.json')
+const auth = require('./config/auth.json')
+const config = require ('./config/config.json')
+const events = require('./config/events.json')
 
 /* Create Spaghettatron */
 let Spaghettatron = new Discord.Client();
@@ -571,7 +571,7 @@ function execute(cmd)
 			for(var i = 0; i < subreddits.length; i++) {
 				subreddits[i].shown = undefined;
 			}
-			util.write(JSON.stringify(subreddits), './strings/subreddits.json');
+			util.write(JSON.stringify(subreddits), './config/strings/subreddits.json');
 		}
 	}
 
@@ -610,7 +610,7 @@ function execute(cmd)
 					}
 				}
 
-				util.write(JSON.stringify(searches), './strings/searches.json');
+				util.write(JSON.stringify(searches), './config/strings/searches.json');
 			}
 		}
 	}
@@ -822,31 +822,31 @@ function loadJSON() {
 
 	var contents;
 
-	contents = fs.readFileSync('./strings/messages.json');
+	contents = fs.readFileSync('./config/strings/messages.json');
 	messages = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/responses.json');
+	contents = fs.readFileSync('./config/strings/responses.json');
 	responses = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/searches.json');
+	contents = fs.readFileSync('./config/strings/searches.json');
 	searches = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/subreddits.json');
+	contents = fs.readFileSync('./config/strings/subreddits.json');
 	subreddits = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/requests.json');
+	contents = fs.readFileSync('./config/strings/requests.json');
 	requests = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/activities.json');
+	contents = fs.readFileSync('./config/strings/activities.json');
 	activities = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/commands.json');
+	contents = fs.readFileSync('./config/strings/commands.json');
 	commands = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/edits.json');
+	contents = fs.readFileSync('./config/strings/edits.json');
 	edits = JSON.parse(contents);
 
-	contents = fs.readFileSync('./strings/command_redirects.json');
+	contents = fs.readFileSync('./config/strings/command_redirects.json');
 	command_redirects = JSON.parse(contents);
 }
 

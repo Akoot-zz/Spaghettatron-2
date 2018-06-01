@@ -1,7 +1,6 @@
 /node_modules
 /data
-/strings
-auth.json
-config.json
-events.json
+/config
 npm-debug.log
+
+package-lock\.json
